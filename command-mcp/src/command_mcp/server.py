@@ -44,15 +44,15 @@ def _build_config(
     try:
         command_parts = _parse_command(parsed.command)
     except ValueError:
-        parser.error("--command にコマンドが指定されていません")
+        parser.error("No command specified for --command")
         raise AssertionError from None  # Unreachable but keeps type checkers happy
 
     name = command_parts[0]
 
     try:
-        help_parts = _parse_command(parsed.command_help)
+        _parse_command(parsed.command_help)
     except ValueError:
-        parser.error("--command-help にコマンドが指定されていません")
+        parser.error("No command specified for --command-help")
         raise AssertionError from None
 
     return ServerConfig(
@@ -111,11 +111,11 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
             )
         except FileNotFoundError as error:
             raise RuntimeError(
-                f"コマンド `{name}` の実行に失敗しました: ファイルが見つかりません"
+                f"Failed to execute command `{name}`: file not found"
             ) from error
         except OSError as error:
             raise RuntimeError(
-                f"コマンド `{name}` の実行に失敗しました: {error}"  # noqa: TRY003
+                f"Failed to execute command `{name}`: {error}"  # noqa: TRY003
             ) from error
 
         return CommandExecutionResult(
