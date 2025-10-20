@@ -16,8 +16,8 @@ from youtube_transcript_api import (
 mcp = FastMCP(
     "YouTube Transcript MCP",
     instructions=(
-        "YouTube 動画の文字起こしと言語リストを返すツールです。"
-        "動画 URL または動画 ID を指定し、必要なら言語コードも渡してください。"
+        "This tool returns YouTube video transcripts and available language lists."
+        " Provide a video URL or video ID, and include a language code if necessary."
     ),
 )
 _transcript_api = YouTubeTranscriptApi()
@@ -28,28 +28,30 @@ def main():
 
 
 class TranscriptSegment(BaseModel):
-    start: float = Field(description="セグメント開始時刻（秒）")
-    duration: float = Field(description="セグメント継続時間（秒）")
-    text: str = Field(description="字幕テキスト")
+    start: float = Field(description="Segment start time in seconds")
+    duration: float = Field(description="Segment duration in seconds")
+    text: str = Field(description="Caption text")
 
 
 class TranscriptResult(BaseModel):
-    video_id: str = Field(description="解析した動画ID")
-    language: str = Field(description="取得した言語コード")
-    segments: list[TranscriptSegment] = Field(description="字幕セグメント一覧")
+    video_id: str = Field(description="Analyzed video ID")
+    language: str = Field(description="Retrieved language code")
+    segments: list[TranscriptSegment] = Field(description="List of caption segments")
 
 
 class TranscriptLanguage(BaseModel):
-    language_code: str = Field(description="言語コード（例: en, ja）")
-    language: str = Field(description="表示名")
-    is_generated: bool = Field(description="自動生成字幕かどうか")
-    is_translatable: bool = Field(description="他言語への翻訳が可能か")
+    language_code: str = Field(description="Language code (e.g., en, ja)")
+    language: str = Field(description="Display name")
+    is_generated: bool = Field(description="Whether the captions are auto-generated")
+    is_translatable: bool = Field(
+        description="Whether translation into other languages is available"
+    )
 
 
 class AvailableLanguagesResult(BaseModel):
-    video_id: str = Field(description="解析した動画ID")
+    video_id: str = Field(description="Analyzed video ID")
     languages: list[TranscriptLanguage] = Field(
-        description="利用可能な字幕言語一覧（言語コード昇順）"
+        description="List of available caption languages"
     )
 
 
@@ -58,14 +60,14 @@ AvailableLanguagesResult.model_rebuild()
 
 
 class TranscriptFetchError(Exception):
-    """カスタム例外"""
+    """Custom exception"""
 
 
 def _extract_video_id(video_reference: str) -> str:
     video_reference = video_reference.strip()
 
     if not video_reference:
-        raise TranscriptFetchError("動画を識別する文字列が空です")
+        raise TranscriptFetchError("The video identifier string is empty")
 
     if _looks_like_video_id(video_reference):
         return video_reference
@@ -91,8 +93,8 @@ def _extract_video_id(video_reference: str) -> str:
             return candidate
 
     raise TranscriptFetchError(
-        "YouTube の動画の URL または ID を認識できませんでした。"
-        " https://youtu.be/<id> や https://www.youtube.com/watch?v=<id> の形式を指定してください。"
+        "Could not recognize the URL or ID for a YouTube video."
+        " Please provide it in the form https://youtu.be/<id> or https://www.youtube.com/watch?v=<id>."
     )
 
 
@@ -118,7 +120,7 @@ def _fetch_transcript(video_id: str, language: str) -> list[dict]:
                     except NoTranscriptFound:
                         continue
             raise TranscriptFetchError(
-                f"言語コード {language} の字幕が見つかりませんでした"
+                f"Captions with language code {language} were not found"
             ) from original_error
     except (VideoUnavailable, TranscriptsDisabled, CouldNotRetrieveTranscript) as error:
         raise TranscriptFetchError(str(error)) from error
@@ -147,7 +149,7 @@ def _yield_languages(video_id: str) -> Iterator[TranscriptLanguage]:
 
 @mcp.tool()
 def list_transcript_languages(video: str) -> AvailableLanguagesResult:
-    """指定された YouTube 動画に利用可能な字幕言語を一覧取得する"""
+    """Retrieve the list of available caption languages for the specified YouTube video"""
     video_id = _extract_video_id(video)
     languages = [*_yield_languages(video_id)]
 
@@ -156,9 +158,11 @@ def list_transcript_languages(video: str) -> AvailableLanguagesResult:
 
 @mcp.tool()
 def get_transcript(video: str, language: str) -> TranscriptResult:
-    """指定された YouTube 動画の字幕を取得する"""
+    """Retrieve captions for the specified YouTube video"""
     if not language.strip():
-        raise ValueError("language には言語コードを指定してください（例: en, ja ）")
+        raise ValueError(
+            "Provide a language code for the language parameter (e.g., en, ja)"
+        )
 
     video_id = _extract_video_id(video)
     raw_segments = _fetch_transcript(video_id, language.strip())
