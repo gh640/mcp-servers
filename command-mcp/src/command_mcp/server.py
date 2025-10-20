@@ -17,7 +17,7 @@ class ServerConfig:
 
 
 @dataclass(frozen=True)
-class ParsedArguments:
+class CliArgs:
     command: str
     description: str
     command_help: str
@@ -34,26 +34,24 @@ def _parse_command(raw: str) -> list[str]:
     return shlex.split(raw)
 
 
-def _build_config(
-    parsed: ParsedArguments, parser: argparse.ArgumentParser
-) -> ServerConfig:
-    command_parts = _parse_command(parsed.command)
+def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfig:
+    command_parts = _parse_command(args.command)
     if not command_parts:
         parser.error("Command in --command is empty.")
         raise AssertionError
 
     name = command_parts[0]
 
-    if not _parse_command(parsed.command_help):
+    if not _parse_command(args.command_help):
         parser.error("Command in --command-help is empty.")
         raise AssertionError
 
     return ServerConfig(
         name=name,
         command=command_parts,
-        description=parsed.description,
-        command_display=parsed.command,
-        help_command_display=parsed.command_help,
+        description=args.description,
+        command_display=args.command,
+        help_command_display=args.command_help,
     )
 
 
@@ -138,13 +136,13 @@ def main() -> None:
         help="Help command that explains usage (e.g., 'git --help')",
     )
 
-    namespace = parser.parse_args()
-    parsed_arguments = ParsedArguments(
-        command=namespace.command,
-        description=namespace.description,
-        command_help=namespace.command_help,
+    parsed = parser.parse_args()
+    args = CliArgs(
+        command=parsed.command,
+        description=parsed.description,
+        command_help=parsed.command_help,
     )
-    config = _build_config(parsed_arguments, parser)
+    config = _build_config(args, parser)
 
     mcp = _create_mcp(config)
     mcp.run(transport="stdio")
