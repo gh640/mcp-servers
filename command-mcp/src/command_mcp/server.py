@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 class ServerConfig:
     name: str
     command: list[str]
+    description: str
     command_display: str
     help_command_display: str
 
@@ -18,6 +19,7 @@ class ServerConfig:
 @dataclass(frozen=True)
 class ParsedArguments:
     command: str
+    description: str
     command_help: str
 
 
@@ -37,18 +39,19 @@ def _build_config(
 ) -> ServerConfig:
     command_parts = _parse_command(parsed.command)
     if not command_parts:
-        parser.error("No command specified for --command")
+        parser.error("Command in --command is empty.")
         raise AssertionError
 
     name = command_parts[0]
 
     if not _parse_command(parsed.command_help):
-        parser.error("No command specified for --command-help")
+        parser.error("Command in --command-help is empty.")
         raise AssertionError
 
     return ServerConfig(
         name=name,
         command=command_parts,
+        description=parsed.description,
         command_display=parsed.command,
         help_command_display=parsed.command_help,
     )
@@ -59,6 +62,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
         "This MCP server wraps a shell command.",
         f"Invoke the `{config.name}` tool to run `{config.command_display}`.",
         "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
+        f"Commands with args {config.command_display} are automatically prepended and pass only additional arguments without duplicates.",
     ]
 
     instructions_lines.append(
@@ -100,13 +104,9 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
                 text=True,
                 check=False,
             )
-        except FileNotFoundError as error:
+        except (FileNotFoundError, OSError) as error:
             raise RuntimeError(
-                f"Failed to execute command `{name}`: file not found"
-            ) from error
-        except OSError as error:
-            raise RuntimeError(
-                f"Failed to execute command `{name}`: {error}"  # noqa: TRY003
+                f"Failed to execute command `{name}`: {error}"
             ) from error
 
         return CommandExecutionResult(
@@ -127,6 +127,11 @@ def main() -> None:
         help="Command to expose as an MCP tool (e.g., 'git')",
     )
     parser.add_argument(
+        "--description",
+        required=True,
+        help="One-line description of the command",
+    )
+    parser.add_argument(
         "--command-help",
         dest="command_help",
         required=True,
@@ -136,6 +141,7 @@ def main() -> None:
     namespace = parser.parse_args()
     parsed_arguments = ParsedArguments(
         command=namespace.command,
+        description=namespace.description,
         command_help=namespace.command_help,
     )
     config = _build_config(parsed_arguments, parser)
