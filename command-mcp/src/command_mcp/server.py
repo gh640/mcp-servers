@@ -30,28 +30,22 @@ class CommandExecutionResult(BaseModel):
 
 
 def _parse_command(raw: str) -> list[str]:
-    parts = shlex.split(raw)
-    if not parts:
-        raise ValueError
-    return parts
+    return shlex.split(raw)
 
 
 def _build_config(
     parsed: ParsedArguments, parser: argparse.ArgumentParser
 ) -> ServerConfig:
-    try:
-        command_parts = _parse_command(parsed.command)
-    except ValueError:
+    command_parts = _parse_command(parsed.command)
+    if not command_parts:
         parser.error("No command specified for --command")
-        raise AssertionError from None  # Unreachable but keeps type checkers happy
+        raise AssertionError
 
     name = command_parts[0]
 
-    try:
-        _parse_command(parsed.command_help)
-    except ValueError:
+    if not _parse_command(parsed.command_help):
         parser.error("No command specified for --command-help")
-        raise AssertionError from None
+        raise AssertionError
 
     return ServerConfig(
         name=name,
