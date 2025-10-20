@@ -40,14 +40,12 @@ def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfi
         parser.error("Command in --command is empty.")
         raise AssertionError
 
-    name = command_parts[0]
-
     if not _parse_command(args.command_help):
         parser.error("Command in --command-help is empty.")
         raise AssertionError
 
     return ServerConfig(
-        name=name,
+        name=command_parts[0],
         command=command_parts,
         description=args.description,
         command_display=args.command,
@@ -60,12 +58,10 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
         "This MCP server wraps a shell command.",
         f"Invoke the `{config.name}` tool to run `{config.command_display}`.",
         "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
-        f"Commands with args {config.command_display} are automatically prepended and pass only additional arguments without duplicates.",
+        f"Commands with args `{config.command_display}` are automatically prepended and pass only additional arguments.",
+        "",
+        f"To review the command help, run: `{config.help_command_display}`",
     ]
-
-    instructions_lines.append(
-        f"To review the command help, run: {config.help_command_display}"
-    )
 
     mcp = FastMCP(
         "Command MCP",
@@ -81,7 +77,7 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
     command = config.command
     name = config.name
 
-    @mcp.tool(name=name)
+    @mcp.tool(name=name, description=config.description)
     def run_command(
         arguments: list[str] = Field(
             default_factory=list,
