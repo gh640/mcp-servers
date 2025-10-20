@@ -1,45 +1,50 @@
 # YouTube Transcript MCP
 
-このプロジェクトは Model Context Protocol (MCP) サーバーとして YouTube の字幕情報を提供します。動画の URL または ID を指定するだけで、利用可能な字幕言語の一覧取得や、特定言語での字幕本文取得が可能です。
+This project exposes YouTube subtitle data through a Model Context Protocol (MCP) server. By supplying a video URL or ID you can list the available subtitle languages and retrieve the transcript in any supported language.
 
-## 前提
+## Prerequisites
 
-- Python 3.11 以上
-- [uv](https://github.com/astral-sh/uv) がインストール済み
+- Python 3.13 or later
+- [uv](https://github.com/astral-sh/uv) installed
 
-初回のみ依存関係を解決するために以下を実行してください。
+Run the following command once to resolve dependencies:
 
 ```bash
 uv sync
 ```
 
-## サーバーの起動
+## Dependencies
 
-MCP サーバーは次のコマンドで起動できます。
+- [`mcp[cli]`](https://github.com/modelcontextprotocol/python-sdk)
+- [`youtube-transcript-api`](https://github.com/jdepoix/youtube-transcript-api)
+
+## Starting the Server
+
+You can start the MCP server with:
 
 ```bash
 uv run src/youtube_transcript_mcp/server.py
 ```
 
-## 提供ツール
+## Available Tools
 
 ### `list_transcript_languages`
 
-指定した動画で利用できる字幕言語の一覧を返します。
+Returns the list of subtitle languages available for the specified video.
 
-引数:
+Arguments:
 
-- `video` 動画 URL または動画 ID
+- `video`: Video URL or video ID
 
 ### `get_transcript`
 
-指定言語の字幕を取得し、開始時刻・継続時間付きで返します。翻訳可能な字幕が存在する場合は自動翻訳も試行します。
+Retrieves the transcript for the requested language, including start times and durations. If machine-translatable captions exist, the server attempts an automatic translation as well.
 
-引数:
+Arguments:
 
-- `video`: 動画 URL または ID
-- `language`: 取得したい言語コード (例: `en`, `ja`)
+- `video`: Video URL or ID
+- `language`: Desired language code (example: `en`, `ja`)
 
-## 動作確認のヒント
+## Tips for Testing
 
-サーバー起動後、MCP クライアント（例: [MCP Inspector](https://github.com/modelcontextprotocol/inspector)）や対応する LLM クライアントに接続して、上記ツールを呼び出してください。
+After starting the server, connect with an MCP-compatible client such as [MCP Inspector](https://github.com/modelcontextprotocol/inspector) and invoke the tools described above.
