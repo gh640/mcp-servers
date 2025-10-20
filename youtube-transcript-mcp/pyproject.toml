@@ -1,0 +1,13 @@
+[project]
+name = "youtube-transcript-mcp"
+version = "0.1.0"
+description = "MCP server that provides YouTube video transcripts"
+readme = "README.md"
+authors = [
+    { name = "Goto Hayato", email = "gh640@hey.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "mcp[cli]>=1.17.0",
+    "youtube-transcript-api>=1.2.3",
+]
