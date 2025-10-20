@@ -1,7 +1,6 @@
 import argparse
 import shlex
 import subprocess
-from collections.abc import Sequence
 from dataclasses import dataclass
 
 from mcp.server.fastmcp import FastMCP
@@ -118,7 +117,7 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
         )
 
 
-def main(argv: Sequence[str] | None = None) -> None:
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Expose a shell command via MCP",
     )
@@ -134,7 +133,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="Help command that explains usage (e.g., 'git --help')",
     )
 
-    namespace = parser.parse_args(argv)
+    namespace = parser.parse_args()
     parsed_arguments = ParsedArguments(
         command=namespace.command,
         command_help=namespace.command_help,
