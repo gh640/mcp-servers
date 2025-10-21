@@ -2,9 +2,17 @@ import argparse
 import shlex
 import subprocess
 from dataclasses import dataclass
+from typing import Self
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
+
+
+@dataclass(frozen=True)
+class CliArgs:
+    command: list[str]
+    description: str
+    command_help: list[str]
 
 
 @dataclass(frozen=True)
@@ -12,7 +20,16 @@ class ServerConfig:
     name: str
     command: list[str]
     description: str
-    help_command: list[str]
+    command_help: list[str]
+
+    @classmethod
+    def from_cli_args(cls, args: CliArgs) -> Self:
+        return cls(
+            name=args.command[0],
+            command=args.command,
+            description=args.description,
+            command_help=args.command_help,
+        )
 
     @property
     def help_name(self) -> str:
@@ -23,15 +40,8 @@ class ServerConfig:
         return shlex.join(self.command)
 
     @property
-    def help_command_display(self) -> str:
-        return shlex.join(self.help_command)
-
-
-@dataclass(frozen=True)
-class CliArgs:
-    command: str
-    description: str
-    command_help: str
+    def command_help_display(self) -> str:
+        return shlex.join(self.command_help)
 
 
 class CommandExecutionResult(BaseModel):
@@ -42,12 +52,20 @@ class CommandExecutionResult(BaseModel):
 
 
 def main() -> None:
+    args = _parse_cli_args()
+    config = ServerConfig.from_cli_args(args)
+    mcp = _create_mcp(config)
+    mcp.run(transport="stdio")
+
+
+def _parse_cli_args() -> CliArgs:
     parser = argparse.ArgumentParser(
         description="Expose a shell command via MCP",
     )
     parser.add_argument(
         "--command",
         required=True,
+        type=_parse_command,
         help="Command to expose as an MCP tool (e.g., 'git')",
     )
     parser.add_argument(
@@ -59,50 +77,32 @@ def main() -> None:
         "--command-help",
         dest="command_help",
         required=True,
+        type=_parse_command,
         help="Help command that explains usage (e.g., 'git --help')",
     )
 
     parsed = parser.parse_args()
-    args = CliArgs(
+
+    return CliArgs(
         command=parsed.command,
         description=parsed.description,
         command_help=parsed.command_help,
     )
-    config = _build_config(args, parser)
-
-    mcp = _create_mcp(config)
-    mcp.run(transport="stdio")
 
 
-def _parse_command(raw: str) -> list[str]:
-    return shlex.split(raw)
+def _parse_command(value: str) -> list[str]:
+    parts = shlex.split(value)
 
+    if not parts:
+        raise argparse.ArgumentTypeError(f"command is empty: {value!r}")
 
-def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfig:
-    command_parts = _parse_command(args.command)
-    if not command_parts:
-        parser.error("Command in --command is empty.")
-        raise AssertionError
-
-    help_command_parts = _parse_command(args.command_help)
-    if not help_command_parts:
-        parser.error("Command in --command-help is empty.")
-        raise AssertionError
-
-    return ServerConfig(
-        name=command_parts[0],
-        command=command_parts,
-        description=args.description,
-        help_command=help_command_parts,
-    )
+    return parts
 
 
 def _create_mcp(config: ServerConfig) -> FastMCP:
-    command = config.command
     name = config.name
+    command = config.command
     help_name = config.help_name
-    description = config.description
-    help_command_display = config.help_command_display
 
     instructions_lines = [
         "This MCP server wraps a shell command.",
@@ -119,7 +119,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
         instructions="\n".join(instructions_lines),
     )
 
-    @mcp.tool(name=name, description=description)
+    @mcp.tool(name=name, description=config.description)
     def run_command(
         arguments: list[str] = Field(
             default_factory=list,
@@ -135,10 +135,10 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
     @mcp.resource(
         f"command-mcp-help://{name}",
         name=help_name,
-        description=f"Show help of `{name}` tool by running `{help_command_display}`.",
+        description=f"Show help of `{name}` tool by running `{config.command_help_display}`.",
     )
     def run_help_command() -> str:
-        result = _run(config.help_command, None)
+        result = _run(config.command_help, None)
         return result.stdout
 
     return mcp
