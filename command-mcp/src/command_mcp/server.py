@@ -107,12 +107,21 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
     instructions_lines = [
         "This MCP server wraps a shell command.",
         "",
-        f"Invoke the `{name}` tool to run `{config.command_display}`.",
-        "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
-        f"Commands with args `{config.command_display}` are automatically prepended and pass only additional arguments.",
-        "",
-        f"Use the `{help_name}` resource to review the command help.",
+        f"- Invoke the `{name}` tool to run `{config.command_display}`.",
+        "    - Provide arguments via the `arguments` parameter.",
+        "    - Optional stdin can be set via `stdin`.",
     ]
+
+    if len(command) > 1:
+        fixed_args = shlex.join(command[1:])
+        instructions_lines.append(
+            f"    - Fixed arguments `{fixed_args}` are automatically prepended and be sure to pass only additional arguments."
+        )
+
+    instructions_lines.extend([
+        "",
+        f"- Use the `{help_name}` resource to review the command help.",
+    ])
 
     mcp = FastMCP(
         "Command MCP",
