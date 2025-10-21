@@ -98,14 +98,19 @@ def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfi
 
 
 def _create_mcp(config: ServerConfig) -> FastMCP:
+    command = config.command
+    name = config.name
+    help_name = config.help_name
+    description = config.description
+
     instructions_lines = [
         "This MCP server wraps a shell command.",
         "",
-        f"Invoke the `{config.name}` tool to run `{config.command_display}`.",
+        f"Invoke the `{name}` tool to run `{config.command_display}`.",
         "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
         f"Commands with args `{config.command_display}` are automatically prepended and pass only additional arguments.",
         "",
-        f"Invoke the `{config.help_name}` tool to review the command help.",
+        f"Invoke the `{help_name}` tool to review the command help.",
     ]
 
     mcp = FastMCP(
@@ -113,17 +118,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
         instructions="\n".join(instructions_lines),
     )
 
-    _register_command_tool(mcp, config)
-
-    return mcp
-
-
-def _register_command_tool(mcp: FastMCP, config: ServerConfig):
-    command = config.command
-    name = config.name
-    help_name = config.help_name
-
-    @mcp.tool(name=name, description=config.description)
+    @mcp.tool(name=name, description=description)
     def run_command(
         arguments: list[str] = Field(
             default_factory=list,
@@ -142,6 +137,8 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
     )
     def run_help_command() -> CommandExecutionResult:
         return _run(config.help_command, None)
+
+    return mcp
 
 
 def _run(args: list[str], input: str | None) -> CommandExecutionResult:
