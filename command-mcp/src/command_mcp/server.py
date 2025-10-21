@@ -129,51 +129,37 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
             description="Optional standard input string piped to the command",
         ),
     ) -> CommandExecutionResult:
-        full_command: list[str] = [*command, *arguments]
-
-        try:
-            result = subprocess.run(
-                full_command,
-                input=stdin,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-        except (FileNotFoundError, OSError) as error:
-            raise RuntimeError(
-                f"Failed to execute command `{name}`: {error}"
-            ) from error
-
-        return CommandExecutionResult(
-            command=full_command,
-            exit_code=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
-        )
+        return _run([*command, *arguments], None)
 
     @mcp.tool(
         name=help_name,
         description=f"Show help of `{config.name}` tool by running `{config.help_command_display}`.",
     )
     def run_help_command() -> CommandExecutionResult:
-        try:
-            result = subprocess.run(
-                config.help_command,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-        except (FileNotFoundError, OSError) as error:
-            raise RuntimeError(
-                f"Failed to execute command `{help_name}`: {error}"
-            ) from error
+        return _run(config.help_command, None)
 
-        return CommandExecutionResult(
-            command=config.help_command,
-            exit_code=result.returncode,
-            stdout=result.stdout,
-            stderr=result.stderr,
+
+def _run(args: list[str], input: str | None) -> CommandExecutionResult:
+    try:
+        result = subprocess.run(
+            args,
+            input=input,
+            capture_output=True,
+            text=True,
+            check=False,
         )
+    except (FileNotFoundError, OSError) as error:
+        args_joined = shlex.join(args)
+        raise RuntimeError(
+            f"Failed to execute command `{args_joined}`: {error}"
+        ) from error
+
+    return CommandExecutionResult(
+        command=args,
+        exit_code=result.returncode,
+        stdout=result.stdout,
+        stderr=result.stderr,
+    )
 
 
 if __name__ == "__main__":
