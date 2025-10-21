@@ -102,6 +102,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
     name = config.name
     help_name = config.help_name
     description = config.description
+    help_command_display = config.help_command_display
 
     instructions_lines = [
         "This MCP server wraps a shell command.",
@@ -110,7 +111,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
         "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
         f"Commands with args `{config.command_display}` are automatically prepended and pass only additional arguments.",
         "",
-        f"Invoke the `{help_name}` tool to review the command help.",
+        f"Use the `{help_name}` resource to review the command help.",
     ]
 
     mcp = FastMCP(
@@ -122,7 +123,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
     def run_command(
         arguments: list[str] = Field(
             default_factory=list,
-            description="Command-line arguments appended to the base command",
+            description="Additional command-line arguments appended to the base command",
         ),
         stdin: str | None = Field(
             default=None,
@@ -131,12 +132,14 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
     ) -> CommandExecutionResult:
         return _run([*command, *arguments], stdin)
 
-    @mcp.tool(
+    @mcp.resource(
+        f"command-mcp-help://{name}",
         name=help_name,
-        description=f"Show help of `{config.name}` tool by running `{config.help_command_display}`.",
+        description=f"Show help of `{name}` tool by running `{help_command_display}`.",
     )
-    def run_help_command() -> CommandExecutionResult:
-        return _run(config.help_command, None)
+    def run_help_command() -> str:
+        result = _run(config.help_command, None)
+        return result.stdout
 
     return mcp
 
