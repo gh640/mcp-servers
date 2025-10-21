@@ -23,7 +23,7 @@ uv run src/command_mcp/server.py --command "git" --description "Git CLI wrapper"
 
 - `--command` (required): Command to expose as an MCP tool (for example, `git`).
 - `--description` (required): One-line text used as the tool description surfaced to MCP clients.
-- `--command-help` (required): Help command that provides descriptive output (for example, `git --help`). The output is surfaced in the server instructions and is available through a dedicated help tool.
+- `--command-help` (required): Help command that provides descriptive output (for example, `git --help`). The output is surfaced in the server instructions and is available via a dedicated help resource.
 
 ## Available Tools
 
@@ -40,15 +40,13 @@ The tool returns:
 - `stdout`: Captured standard output.
 - `stderr`: Captured standard error.
 
-### Help tool
+### Help resource
 
-The MCP server additionally exposes a `<command>-help` tool. Invoking it executes the command passed via `--command-help` and returns the captured output and exit status. Use this tool to quickly surface usage information inside MCP clients.
+The MCP server additionally exposes a `<command>-help` resource available at `command-mcp-help://<command>`. Fetching this resource runs the command configured via `--command-help` and returns its standard output, making it easy to surface usage documentation inside MCP clients.
 
-The tool returns:
+The resource returns:
 
-- `exit_code`: Process exit status.
-- `stdout`: Captured standard output.
-- `stderr`: Captured standard error.
+- `stdout`: Captured standard output from the help command.
 
 ## Tips for Testing
 
