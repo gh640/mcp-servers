@@ -1,0 +1,12 @@
+[project]
+name = "command-mcp"
+version = "0.1.0"
+description = "MCP server that wraps a shell command"
+readme = "README.md"
+authors = [
+    { name = "Goto Hayato", email = "gh640@hey.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "mcp[cli]>=1.17.0",
+]
