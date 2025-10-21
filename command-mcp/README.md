@@ -18,13 +18,14 @@ uv sync
 Configure the server with the command and its help invocation:
 
 ```bash
-uv run src/command_mcp/server.py --command "git" --command-help "git --help"
+uv run src/command_mcp/server.py --command "git" --description "Git CLI wrapper" --command-help "git --help"
 ```
 
 - `--command` (required): Command to expose as an MCP tool (for example, `git`).
-- `--command-help` (optional but recommended): Help command that provides descriptive output (for example, `git --help`). The output is surfaced in the server instructions for easier discovery.
+- `--description` (required): One-line text used as the tool description surfaced to MCP clients.
+- `--command-help` (required): Help command that provides descriptive output (for example, `git --help`). The output is surfaced in the server instructions and is available through a dedicated help tool.
 
-## Available Tool
+## Available Tools
 
 ### Command execution tool
 
@@ -32,6 +33,16 @@ The MCP server exposes a tool with the same name as the configured command. The 
 
 - `arguments`: List of arguments that will be passed to the command.
 - `stdin`: Optional standard input string that will be piped to the command.
+
+The tool returns:
+
+- `exit_code`: Process exit status.
+- `stdout`: Captured standard output.
+- `stderr`: Captured standard error.
+
+### Help tool
+
+The MCP server additionally exposes a `<command>-help` tool. Invoking it executes the command passed via `--command-help` and returns the captured output and exit status. Use this tool to quickly surface usage information inside MCP clients.
 
 The tool returns:
 

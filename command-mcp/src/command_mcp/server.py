@@ -13,7 +13,12 @@ class ServerConfig:
     command: list[str]
     description: str
     command_display: str
+    help_command: list[str]
     help_command_display: str
+
+    @property
+    def help_name(self) -> str:
+        return f"{self.name}-help"
 
 
 @dataclass(frozen=True)
@@ -40,7 +45,8 @@ def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfi
         parser.error("Command in --command is empty.")
         raise AssertionError
 
-    if not _parse_command(args.command_help):
+    help_command_parts = _parse_command(args.command_help)
+    if not help_command_parts:
         parser.error("Command in --command-help is empty.")
         raise AssertionError
 
@@ -49,6 +55,7 @@ def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfi
         command=command_parts,
         description=args.description,
         command_display=args.command,
+        help_command=help_command_parts,
         help_command_display=args.command_help,
     )
 
@@ -60,7 +67,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
         "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
         f"Commands with args `{config.command_display}` are automatically prepended and pass only additional arguments.",
         "",
-        f"To review the command help, run: `{config.help_command_display}`",
+        f"To review the command help, You can invoke the `{config.help_name}` tool.",
     ]
 
     mcp = FastMCP(
@@ -76,6 +83,7 @@ def _create_mcp(config: ServerConfig) -> FastMCP:
 def _register_command_tool(mcp: FastMCP, config: ServerConfig):
     command = config.command
     name = config.name
+    help_name = config.help_name
 
     @mcp.tool(name=name, description=config.description)
     def run_command(
@@ -105,6 +113,30 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
 
         return CommandExecutionResult(
             command=full_command,
+            exit_code=result.returncode,
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
+
+    @mcp.tool(
+        name=help_name,
+        description=f"Show help of `{config.name}` tool by running `{config.help_command_display}`.",
+    )
+    def run_help_command() -> CommandExecutionResult:
+        try:
+            result = subprocess.run(
+                config.help_command,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except (FileNotFoundError, OSError) as error:
+            raise RuntimeError(
+                f"Failed to execute command `{help_name}`: {error}"
+            ) from error
+
+        return CommandExecutionResult(
+            command=config.help_command,
             exit_code=result.returncode,
             stdout=result.stdout,
             stderr=result.stderr,
