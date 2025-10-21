@@ -35,6 +35,39 @@ class CommandExecutionResult(BaseModel):
     stderr: str = Field(description="Captured standard error")
 
 
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Expose a shell command via MCP",
+    )
+    parser.add_argument(
+        "--command",
+        required=True,
+        help="Command to expose as an MCP tool (e.g., 'git')",
+    )
+    parser.add_argument(
+        "--description",
+        required=True,
+        help="One-line description of the command",
+    )
+    parser.add_argument(
+        "--command-help",
+        dest="command_help",
+        required=True,
+        help="Help command that explains usage (e.g., 'git --help')",
+    )
+
+    parsed = parser.parse_args()
+    args = CliArgs(
+        command=parsed.command,
+        description=parsed.description,
+        command_help=parsed.command_help,
+    )
+    config = _build_config(args, parser)
+
+    mcp = _create_mcp(config)
+    mcp.run(transport="stdio")
+
+
 def _parse_command(raw: str) -> list[str]:
     return shlex.split(raw)
 
@@ -141,39 +174,6 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
             stdout=result.stdout,
             stderr=result.stderr,
         )
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Expose a shell command via MCP",
-    )
-    parser.add_argument(
-        "--command",
-        required=True,
-        help="Command to expose as an MCP tool (e.g., 'git')",
-    )
-    parser.add_argument(
-        "--description",
-        required=True,
-        help="One-line description of the command",
-    )
-    parser.add_argument(
-        "--command-help",
-        dest="command_help",
-        required=True,
-        help="Help command that explains usage (e.g., 'git --help')",
-    )
-
-    parsed = parser.parse_args()
-    args = CliArgs(
-        command=parsed.command,
-        description=parsed.description,
-        command_help=parsed.command_help,
-    )
-    config = _build_config(args, parser)
-
-    mcp = _create_mcp(config)
-    mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
