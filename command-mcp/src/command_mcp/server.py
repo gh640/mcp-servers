@@ -134,7 +134,7 @@ def _register_command_tool(mcp: FastMCP, config: ServerConfig):
             description="Optional standard input string piped to the command",
         ),
     ) -> CommandExecutionResult:
-        return _run([*command, *arguments], None)
+        return _run([*command, *arguments], stdin)
 
     @mcp.tool(
         name=help_name,
