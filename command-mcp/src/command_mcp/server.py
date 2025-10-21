@@ -12,13 +12,19 @@ class ServerConfig:
     name: str
     command: list[str]
     description: str
-    command_display: str
     help_command: list[str]
-    help_command_display: str
 
     @property
     def help_name(self) -> str:
         return f"{self.name}-help"
+
+    @property
+    def command_display(self) -> str:
+        return shlex.join(self.command)
+
+    @property
+    def help_command_display(self) -> str:
+        return shlex.join(self.help_command)
 
 
 @dataclass(frozen=True)
@@ -87,20 +93,19 @@ def _build_config(args: CliArgs, parser: argparse.ArgumentParser) -> ServerConfi
         name=command_parts[0],
         command=command_parts,
         description=args.description,
-        command_display=args.command,
         help_command=help_command_parts,
-        help_command_display=args.command_help,
     )
 
 
 def _create_mcp(config: ServerConfig) -> FastMCP:
     instructions_lines = [
         "This MCP server wraps a shell command.",
+        "",
         f"Invoke the `{config.name}` tool to run `{config.command_display}`.",
         "Provide arguments via the `arguments` parameter; optional stdin can be set via `stdin`.",
         f"Commands with args `{config.command_display}` are automatically prepended and pass only additional arguments.",
         "",
-        f"To review the command help, You can invoke the `{config.help_name}` tool.",
+        f"Invoke the `{config.help_name}` tool to review the command help.",
     ]
 
     mcp = FastMCP(
